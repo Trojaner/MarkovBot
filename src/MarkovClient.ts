@@ -3,7 +3,7 @@ import requireAll from 'require-all';
 import {Command} from './Command';
 import {Event} from './Event';
 import {handleEvent} from './Handlers';
-import {Client, Collection} from 'discord.js';
+import {Client, Collection, Guild} from 'discord.js';
 
 export default class CustomClient extends Client {
   commands: Collection<string, Command> = new Collection();
@@ -49,8 +49,7 @@ export default class CustomClient extends Client {
     });
   }
 
-  async deployCommands() {
-    const guild = this.guilds.cache.get(process.env.GUILD_ID!)!;
+  async deployCommands(guild: Guild) {
     const commandsJSON = [...this.commands.values()].map(x =>
       x.builder.toJSON()
     );

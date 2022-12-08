@@ -3,8 +3,8 @@ import {Event} from '../Event';
 export default new Event({
   name: 'ready',
   run: async client => {
-    console.log('Deploying commands...');
-    await client.deployCommands();
-    console.log('Ready');
+    for (const guild of client.guilds.cache.values()) {
+      await client.deployCommands(guild);
+    }
   },
 });

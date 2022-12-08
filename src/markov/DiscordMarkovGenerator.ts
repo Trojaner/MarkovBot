@@ -99,7 +99,7 @@ export async function generateTextFromDiscordMessages({
     return;
   }
 
-  if (result.endsWith('.')) {
+  while (result.endsWith('.')) {
     result = result.slice(0, -1);
   }
 

@@ -1,5 +1,6 @@
 import {SlashCommandBuilder} from '@discordjs/builders';
 import {ChannelType, Snowflake} from 'discord.js';
+import {Op} from 'sequelize';
 import {Command} from '../Command';
 import {DbMessages} from '../Database';
 import Messages from '../Messages';
@@ -45,7 +46,7 @@ export default new Command({
     }
 
     const userId =
-      (interaction.options.get('user')!.value as string) || undefined;
+      (interaction.options.get('user')?.value as string) || undefined;
 
     const latestMessage = await DbMessages.findOne({
       where: {
@@ -58,7 +59,7 @@ export default new Command({
     let count = await DbMessages.count({
       where: {
         channel_id: channelId,
-        user_id: userId,
+        user_id: userId || [{[Op.ne]: null}],
       },
     });
 

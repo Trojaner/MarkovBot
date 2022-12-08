@@ -85,6 +85,10 @@ export class Markov {
           }
 
           if (prev) {
+            if (!ngram.string) {
+              continue;
+            }
+
             const c = ngram.string[ngram.string.length - 1];
             const next = (prev.next[c] = prev.next[c] || {
               next: ngram,

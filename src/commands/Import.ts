@@ -86,6 +86,7 @@ export default new Command({
 
       await DbMessages.bulkCreate(
         messages.map(message => ({
+          guild_id: message.guild.id,
           message_id: message.id,
           user_id: message.author.id,
           channel_id: message.channel.id,

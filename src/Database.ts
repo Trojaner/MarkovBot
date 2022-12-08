@@ -8,6 +8,7 @@ export const DbMessages = sequelize.define(
       type: DataTypes.INTEGER,
       primaryKey: true,
     },
+    guild_id: DataTypes.INTEGER,
     user_id: DataTypes.INTEGER,
     channel_id: DataTypes.INTEGER,
     content: DataTypes.STRING,

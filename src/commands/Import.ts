@@ -12,6 +12,13 @@ export default new Command({
         .setDescription('Channel to import from.')
         .setRequired(true)
     )
+    .addUserOption(option =>
+      option
+        .setName('user')
+        .setDescription('User to import from.')
+        .setRequired(false)
+    )
+
     .setName('import')
     .setDescription('Import messages to database.'),
 
@@ -37,6 +44,9 @@ export default new Command({
       return;
     }
 
+    const userId =
+      (interaction.options.get('user')!.value as string) || undefined;
+
     const latestMessage = await DbMessages.findOne({
       where: {
         channel_id: channelId,
@@ -48,6 +58,7 @@ export default new Command({
     let count = await DbMessages.count({
       where: {
         channel_id: channelId,
+        user_id: userId,
       },
     });
 

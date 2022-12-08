@@ -28,7 +28,7 @@ export async function generateTextFromDiscordMessages({
   const entries = await DbMessages.findAll({
     where: {
       user_id: userId || {[Op.ne]: null},
-      guild_id: guildId || {[Op.ne]: null},
+      guild_id: guildId || channel.guild.id,
       content: {[Op.ne]: ''},
     },
   });

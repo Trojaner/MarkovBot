@@ -71,7 +71,11 @@ export class Markov {
       for (let o = this.minOrder; o <= this.maxOrder; ++o) {
         let prev;
         for (let i = 0; i < s.length - o + 1; ++i) {
-          const w = s.slice(i, i + o);
+          let w = s.slice(i, i + o);
+          if (w.length == 0) {
+            continue;
+          }
+
           const hash = Markov.normalize(w.join(this.delimiter).toLowerCase());
           const ngram = (this.ngrams[hash] =
             this.ngrams[hash] || new Ngram(w, o));

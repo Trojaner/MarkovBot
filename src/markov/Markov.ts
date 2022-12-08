@@ -75,7 +75,8 @@ export class Markov {
           }
 
           if (prev) {
-            const c = ngram.string[ngram.string.length - 1];
+            const s = ngram.string || ' ';
+            const c = s[s.length - 1];
             const next = (prev.next[c] = prev.next[c] || {
               next: ngram,
               occurrences: 0,

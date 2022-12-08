@@ -44,7 +44,8 @@ export async function generateTextFromDiscordMessages({
     .filter(
       x => !commandPrefixes.some(prefix => x.startsWith(prefix) && x.length > 2)
     )
-    .sort(() => Math.random() - 0.5);
+    .sort(() => Math.random() - 0.5)
+    .map(x => (!x.endsWith('.') ? x + '.' : x));
 
   if (messages.length == 0) {
     console.error('No messages found');
@@ -89,13 +90,17 @@ export async function generateTextFromDiscordMessages({
       text != input) as boolean;
   };
 
-  const result = markov
+  let result = markov
     .randomSequence(key.join(' '), untilFilter)
     .replace(/\0/g, '');
 
   if (result == '' || Markov.normalize(result) == input) {
     console.log('Failed to generate message');
     return;
+  }
+
+  if (result.endsWith('.')) {
+    result = result.slice(0, -1);
   }
 
   const webhooks = await channel.fetchWebhooks();

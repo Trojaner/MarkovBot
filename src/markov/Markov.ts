@@ -61,7 +61,13 @@ export class Markov {
     this.maxOrder = isNaN(options.maxOrder) ? 4 : options.maxOrder;
 
     for (let source = 0; source < this.source.length; ++source) {
-      const s = this.source[source].split(this.delimiter);
+      const m = this.source[source];
+      if (!m || Markov.normalize(m).length == 0) {
+        continue;
+      }
+
+      const s = m.split(this.delimiter);
+
       for (let o = this.minOrder; o <= this.maxOrder; ++o) {
         let prev;
         for (let i = 0; i < s.length - o + 1; ++i) {
@@ -74,19 +80,13 @@ export class Markov {
             ngram.start = true;
           }
 
-          if (prev?.next) {
-            const s = ngram.string;
-            if (s) {
-              const c = s[s.length - 1];
-
-              if (prev.next[c]) {
-                const next = (prev.next[c] = prev.next[c] || {
-                  next: ngram,
-                  occurrences: 0,
-                });
-                next.occurrences += 1;
-              }
-            }
+          if (prev) {
+            const c = ngram.string[ngram.string.length - 1];
+            const next = (prev.next[c] = prev.next[c] || {
+              next: ngram,
+              occurrences: 0,
+            });
+            next.occurrences += 1;
           }
 
           prev = ngram;

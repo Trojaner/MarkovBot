@@ -6,12 +6,6 @@ import Messages from '../Messages';
 
 export default new Command({
   builder: new SlashCommandBuilder()
-    .addUserOption(option =>
-      option
-        .setName('user')
-        .setDescription('User to impersonate.')
-        .setRequired(true)
-    )
     .addChannelOption(option =>
       option
         .setName('channel')
@@ -21,13 +15,11 @@ export default new Command({
     .addStringOption(option =>
       option.setName('query').setDescription('Markov query.').setRequired(false)
     )
-    .setName('impersonate')
-    .setDescription('Impersonate a user'),
+    .setName('hive')
+    .setDescription('Impersonate with the hive mind of the whole guild'),
 
   run: async ({interaction, client}) => {
     await interaction.deleteReply();
-
-    const userId = interaction.options.get('user')!.value as string;
 
     const channelId = interaction.options.get('channel')!.value as string;
     const channel = await client.channels.fetch(channelId);
@@ -53,8 +45,8 @@ export default new Command({
     const query = interaction.options.get('query')?.value as string;
     await generateTextFromDiscordMessages({
       client,
+      guildId: channel.guild.id,
       channel,
-      userId,
       query,
     });
   },

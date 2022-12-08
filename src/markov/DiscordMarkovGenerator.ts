@@ -1,22 +1,34 @@
-import {Snowflake, TextChannel, Webhook, WebhookClient} from 'discord.js';
+import {
+  GuildMember,
+  Snowflake,
+  TextChannel,
+  Webhook,
+  WebhookClient,
+} from 'discord.js';
 import {Op} from 'sequelize';
 import {DbMessages} from '../Database';
+import MarkovClient from '../MarkovClient';
 import {Markov} from './Markov';
 
 interface IGenerateTextOptions {
+  client: MarkovClient;
   query?: string;
-  userId: Snowflake;
+  userId?: Snowflake;
+  guildId?: Snowflake;
   channel: TextChannel;
 }
 
 export async function generateTextFromDiscordMessages({
+  client,
   query,
   userId,
+  guildId,
   channel,
 }: IGenerateTextOptions) {
   const entries = await DbMessages.findAll({
     where: {
-      user_id: userId,
+      user_id: userId || undefined,
+      guild_id: guildId || undefined,
       content: {
         [Op.and]: [{[Op.ne]: ''}],
       },
@@ -98,9 +110,14 @@ export async function generateTextFromDiscordMessages({
     });
   }
 
-  const member = await channel.guild.members.fetch(userId);
-
   const webhookClient = new WebhookClient({url: webhook.url});
+
+  let member: GuildMember;
+  if (userId) {
+    member = await channel.guild.members.fetch(userId);
+  } else {
+    member = await channel.guild.members.fetch(client.user!.id);
+  }
 
   try {
     await webhookClient.send({

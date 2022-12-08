@@ -5,12 +5,12 @@ import {Event} from './Event';
 import {handleEvent} from './Handlers';
 import {Client, Collection, Guild} from 'discord.js';
 
-export default class CustomClient extends Client {
+export default class MarkovClient extends Client {
   commands: Collection<string, Command> = new Collection();
 
   constructor() {
     super({
-      intents: ['GuildMembers', 'GuildMessages'],
+      intents: ['GuildMessages'],
     });
   }
 

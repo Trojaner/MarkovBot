@@ -51,6 +51,7 @@ export default new Command({
     const latestMessage = await DbMessages.findOne({
       where: {
         channel_id: channelId,
+        user_id: userId || [{[Op.ne]: -1}],
       },
       order: [['time', 'ASC']],
     });
@@ -59,7 +60,7 @@ export default new Command({
     let count = await DbMessages.count({
       where: {
         channel_id: channelId,
-        user_id: userId || [{[Op.ne]: null}],
+        user_id: userId || [{[Op.ne]: -1}],
       },
     });
 

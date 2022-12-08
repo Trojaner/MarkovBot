@@ -74,14 +74,19 @@ export class Markov {
             ngram.start = true;
           }
 
-          if (prev) {
-            const s = ngram.string || ' ';
-            const c = s[s.length - 1];
-            const next = (prev.next[c] = prev.next[c] || {
-              next: ngram,
-              occurrences: 0,
-            });
-            next.occurrences += 1;
+          if (prev?.next) {
+            const s = ngram.string;
+            if (s) {
+              const c = s[s.length - 1];
+
+              if (prev.next[c]) {
+                const next = (prev.next[c] = prev.next[c] || {
+                  next: ngram,
+                  occurrences: 0,
+                });
+                next.occurrences += 1;
+              }
+            }
           }
 
           prev = ngram;

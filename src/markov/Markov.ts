@@ -76,7 +76,7 @@ export class Markov {
             continue;
           }
 
-          const hash = Markov.normalize(w.join(this.delimiter).toLowerCase());
+          const hash = Markov.normalize(w.join(this.delimiter));
           const ngram = (this.ngrams[hash] =
             this.ngrams[hash] || new Ngram(w, o));
           ngram.occurrences += 1;
@@ -163,9 +163,7 @@ export class Markov {
       do {
         o = Math.floor(Math.random() * orderAttempts.length);
         o = orderAttempts.splice(o, 1)[0];
-        hash = Markov.normalize(
-          s.slice(-o).join(this.delimiter).toLocaleLowerCase()
-        );
+        hash = Markov.normalize(s.slice(-o).join(this.delimiter));
         n = this.ngrams[hash];
       } while (!n && orderAttempts.length > 0);
 

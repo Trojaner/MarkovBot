@@ -92,7 +92,8 @@ export async function generateTextFromDiscordMessages({
 
   let result = markov
     .randomSequence(key.join(' '), untilFilter)
-    .replace(/\0/g, '');
+    .replace(/\0/g, '')
+    .trim();
 
   if (result == '' || Markov.normalize(result) == input) {
     console.log('Failed to generate message');

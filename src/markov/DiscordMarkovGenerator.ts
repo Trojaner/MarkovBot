@@ -41,6 +41,7 @@ export async function generateTextFromDiscordMessages({
     .map(x => x.getDataValue<string>('content'))
     .filter(x => !x.includes('https://'))
     .filter(x => !x.includes('http://'))
+    .filter(x => !x.includes('```'))
     .map(x => Markov.normalize(x || ''))
     .filter(x => x != '' && x.split(' ').length > 2)
     .filter(

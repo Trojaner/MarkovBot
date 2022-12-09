@@ -48,6 +48,7 @@ export default new Command({
       guildId: channel.guild.id,
       channel,
       query,
+      limit: 50000,
     });
   },
 });

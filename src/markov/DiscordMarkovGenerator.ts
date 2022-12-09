@@ -16,6 +16,7 @@ interface IGenerateTextOptions {
   userId?: Snowflake;
   guildId?: Snowflake;
   channel: TextChannel;
+  limit?: number;
 }
 
 export async function generateTextFromDiscordMessages({
@@ -24,6 +25,7 @@ export async function generateTextFromDiscordMessages({
   userId,
   guildId,
   channel,
+  limit,
 }: IGenerateTextOptions) {
   const entries = await DbMessages.findAll({
     where: {
@@ -35,7 +37,7 @@ export async function generateTextFromDiscordMessages({
 
   const commandPrefixes = ['!', '?', '-', '+', '@', '#', '$', '%', '&'];
 
-  const messages = entries
+  let messages = entries
     .map(x => x.getDataValue<string>('content'))
     .filter(x => !x.includes('https://'))
     .filter(x => !x.includes('http://'))
@@ -50,6 +52,10 @@ export async function generateTextFromDiscordMessages({
   if (messages.length == 0) {
     console.error('No messages found');
     return;
+  }
+
+  if (limit && limit > 0) {
+    messages = messages.slice(0, limit);
   }
 
   let input: string | null = null;

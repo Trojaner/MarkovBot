@@ -24,7 +24,7 @@ export default new Command({
     const channelId = interaction.options.get('channel')!.value as string;
     const channel = await client.channels.fetch(channelId);
 
-    if (channel == null) {
+    if (!channel) {
       await interaction.followUp({
         embeds: [Messages.error().setDescription('Channel not found.')],
       });
@@ -32,7 +32,7 @@ export default new Command({
       return;
     }
 
-    if (channel.type != ChannelType.GuildText) {
+    if (channel.type !== ChannelType.GuildText) {
       await interaction.followUp({
         embeds: [
           Messages.error().setDescription('Channel is not a text channel.'),

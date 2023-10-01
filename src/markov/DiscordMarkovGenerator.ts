@@ -43,14 +43,14 @@ export async function generateTextFromDiscordMessages({
     .filter(x => !x.includes('http://'))
     .filter(x => !x.includes('```'))
     .map(x => Markov.normalize(x || ''))
-    .filter(x => x != '' && x.split(' ').length > 2)
+    .filter(x => x !== '' && x.split(' ').length > 2)
     .filter(
       x => !commandPrefixes.some(prefix => x.startsWith(prefix) && x.length > 2)
     )
     .sort(() => Math.random() - 0.5)
     .map(x => (!x.endsWith('.') ? x + '.' : x));
 
-  if (messages.length == 0) {
+  if (messages.length === 0) {
     console.error('No messages found');
     return;
   }
@@ -93,8 +93,8 @@ export async function generateTextFromDiscordMessages({
       (text.endsWith('\0') ||
         text.length >= maxTotalLength ||
         s.length >= randomWordCount) &&
-      text != key.join(' ') &&
-      text != input) as boolean;
+      text !== key.join(' ') &&
+      text !== input) as boolean;
   };
 
   let result = markov
@@ -102,7 +102,7 @@ export async function generateTextFromDiscordMessages({
     .replace(/\0/g, '')
     .trim();
 
-  if (result == '' || Markov.normalize(result) == input) {
+  if (result === '' || Markov.normalize(result) === input) {
     console.log('Failed to generate message');
     return;
   }
@@ -112,16 +112,18 @@ export async function generateTextFromDiscordMessages({
   }
 
   const webhooks = await channel.fetchWebhooks();
-  let webhook: Webhook | undefined = webhooks.find(x => x.name == 'Markov Bot');
+  let webhook: Webhook | undefined = webhooks.find(
+    x => x.name === 'Markov Bot'
+  );
 
-  if (webhook == null) {
+  if (!webhook) {
     webhook = await channel.createWebhook({
       name: 'Markov Bot',
       reason: 'Markov user impersonation',
     });
   }
 
-  const webhookClient = new WebhookClient({url: webhook.url});
+  const webhookClient = new WebhookClient({url: webhook!.url});
 
   let member: GuildMember;
   if (userId) {

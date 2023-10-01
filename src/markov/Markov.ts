@@ -1,3 +1,4 @@
+/* eslint-disable no-prototype-builtins */
 // based on: https://github.com/seleb/markov-multi-order/
 
 type Next = {
@@ -8,7 +9,7 @@ type Next = {
 class Ngram {
   string: string[];
   order: number;
-  occurrences: number = 0;
+  occurrences = 0;
   next: Record<string, Next> = {};
   thresholds: {
     next: Next;
@@ -22,8 +23,8 @@ class Ngram {
   }
 
   getNext() {
-    const thresholds = this.thresholds.filter(x => x?.next.next != null);
-    if (thresholds.length == 0) {
+    const thresholds = this.thresholds.filter(x => x?.next.next !== null);
+    if (thresholds.length === 0) {
       return '';
     }
 
@@ -62,7 +63,7 @@ export class Markov {
 
     for (let source = 0; source < this.source.length; ++source) {
       const m = this.source[source];
-      if (!m || Markov.normalize(m).length == 0) {
+      if (!m || Markov.normalize(m).length === 0) {
         continue;
       }
 
@@ -71,8 +72,8 @@ export class Markov {
       for (let o = this.minOrder; o <= this.maxOrder; ++o) {
         let prev;
         for (let i = 0; i < s.length - o + 1; ++i) {
-          let w = s.slice(i, i + o);
-          if (w.length == 0) {
+          const w = s.slice(i, i + o);
+          if (w.length === 0) {
             continue;
           }
 
@@ -186,7 +187,7 @@ export class Markov {
   static normalize = (str: string) => {
     return str
       .replace(/\s{2,}/g, ' ')
-      .replace(/(\'\")/g, '')
+      .replace(/('")/g, '')
       .trim();
   };
 }

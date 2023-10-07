@@ -1,4 +1,5 @@
 import {
+  CommandInteraction,
   GuildMember,
   Snowflake,
   TextChannel,
@@ -8,7 +9,9 @@ import {
 import {Op} from 'sequelize';
 import {DbMessages} from '../Database';
 import MarkovClient from '../MarkovClient';
-import {Markov} from './Markov';
+import {MarkovChain} from './MarkovChain';
+import * as sw from 'stopword';
+import * as natural from 'natural';
 
 interface IGenerateTextOptions {
   client: MarkovClient;
@@ -17,7 +20,15 @@ interface IGenerateTextOptions {
   guildId?: Snowflake;
   channel: TextChannel;
   limit?: number;
+  interaction: CommandInteraction;
 }
+
+const normalize = (str: string) => {
+  return str
+    .replace(/\s{2,}/g, ' ')
+    .replace(/('")/g, '')
+    .trim();
+};
 
 export async function generateTextFromDiscordMessages({
   client,
@@ -26,6 +37,7 @@ export async function generateTextFromDiscordMessages({
   guildId,
   channel,
   limit,
+  interaction,
 }: IGenerateTextOptions) {
   const entries = await DbMessages.findAll({
     where: {
@@ -35,14 +47,14 @@ export async function generateTextFromDiscordMessages({
     },
   });
 
-  const commandPrefixes = ['!', '?', '-', '+', '@', '#', '$', '%', '&'];
+  const commandPrefixes = ['!', '?', '-', '+', '#', '$', '%', '&'];
 
   let messages = entries
     .map(x => x.getDataValue<string>('content'))
     .filter(x => !x.includes('https://'))
     .filter(x => !x.includes('http://'))
     .filter(x => !x.includes('```'))
-    .map(x => Markov.normalize(x || ''))
+    .map(x => normalize(x || ''))
     .filter(x => x !== '' && x.split(' ').length > 2)
     .filter(
       x => !commandPrefixes.some(prefix => x.startsWith(prefix) && x.length > 2)
@@ -51,7 +63,10 @@ export async function generateTextFromDiscordMessages({
     .map(x => (!x.endsWith('.') ? x + '.' : x));
 
   if (messages.length === 0) {
-    console.error('No messages found');
+    await interaction.followUp({
+      content: 'No messages found. Import messages first.',
+      ephemeral: true,
+    });
     return;
   }
 
@@ -61,54 +76,57 @@ export async function generateTextFromDiscordMessages({
 
   let input: string | null = null;
   if (query && query.length > 0) {
-    input = Markov.normalize(query) || null;
+    input = normalize(query) || null;
   } else {
     const randomMessage = messages[Math.floor(Math.random() * messages.length)];
     const messageWords = randomMessage.split(' ');
     const randomWord = messageWords[0];
-    input = Markov.normalize(randomWord);
+    input = normalize(randomWord);
   }
 
-  const markov = new Markov({
-    delimiter: ' ',
+  const markovChain = new MarkovChain({
     minOrder: 1,
     maxOrder: 3,
-    source: messages,
+    stopwords: sw.tur,
+    tokenizer: new natural.WordTokenizer({
+      pattern: /([\p{Script=Latin}'.?!:;,<>@]+|[0-9._]+|.|!|\?|'|"|:|;|,|-)/iu,
+    }),
   });
+
+  for (const msg of messages) {
+    markovChain.addToCorpus(msg);
+  }
 
   let key: string[];
 
   if (input) {
     key = input.split(' ');
   } else {
-    key = markov.randomStartNgram().string;
+    key = [markovChain.randomStartToken()];
   }
 
   const maxTotalLength = 2000;
-  const randomWordCount = Math.floor(Math.random() * 47) + 3;
 
   const untilFilter = (s: string[]) => {
-    const text = s ? Markov.normalize(s?.join(' ')) : null;
+    const text = s ? normalize(s?.join(' ')) : null;
     return (text &&
-      (text.endsWith('\0') ||
-        text.length >= maxTotalLength ||
-        s.length >= randomWordCount) &&
+      (text.endsWith('\0') || text.length >= maxTotalLength) &&
       text !== key.join(' ') &&
       text !== input) as boolean;
   };
 
-  let result = markov
+  const result = markovChain
     .randomSequence(key.join(' '), untilFilter)
+    .join(' ')
     .replace(/\0/g, '')
     .trim();
 
-  if (result === '' || Markov.normalize(result) === input) {
-    console.log('Failed to generate message');
+  if (result === '' || normalize(result) === input) {
+    await interaction.followUp({
+      content: 'Failed to generate message. Try a different query.',
+      ephemeral: true,
+    });
     return;
-  }
-
-  while (result.endsWith('.')) {
-    result = result.slice(0, -1);
   }
 
   const webhooks = await channel.fetchWebhooks();
@@ -138,6 +156,7 @@ export async function generateTextFromDiscordMessages({
       avatarURL: member.displayAvatarURL() || member.avatarURL() || undefined,
       username: member.displayName || member.nickname || member.user.username,
     });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (e: any) {
     if (e.toString().includes('USERNAME_INVALID')) {
       await webhookClient.send({

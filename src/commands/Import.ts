@@ -1,5 +1,5 @@
 import {SlashCommandBuilder} from '@discordjs/builders';
-import {ChannelType, Snowflake} from 'discord.js';
+import {ChannelType, Message, Snowflake} from 'discord.js';
 import {Op} from 'sequelize';
 import {Command} from '../Command';
 import {DbMessages} from '../Database';
@@ -48,12 +48,20 @@ export default new Command({
     const userId =
       (interaction.options.get('user')?.value as string) || undefined;
 
+    if (interaction.user.id !== process.env.BOT_OWNER_ID) {
+      await interaction.editReply({
+        embeds: [Messages.error().setDescription('Permission denied.')],
+      });
+
+      return;
+    }
+
     const latestMessage = await DbMessages.findOne({
       where: {
         channel_id: channelId,
         user_id: userId || {[Op.ne]: null},
       },
-      order: [['time', 'ASC']],
+      order: [['time', 'DESC']],
     });
 
     let latestMessageId: Snowflake | undefined = undefined;
@@ -65,12 +73,13 @@ export default new Command({
     });
 
     if (latestMessage) {
-      latestMessageId = latestMessage.getDataValue<Snowflake>('message_id');
+      //latestMessageId = latestMessage.getDataValue<Snowflake>('message_id');
+      latestMessageId = '1050544388050268210';
 
       await interaction.followUp({
         embeds: [
           Messages.success().setDescription(
-            `Continuing to import after message # ${latestMessageId}`
+            `Continuing to import after message #${latestMessageId}`
           ),
         ],
       });
@@ -78,25 +87,34 @@ export default new Command({
 
     // eslint-disable-next-line no-constant-condition
     while (true) {
-      let messages = await channel.messages.fetch({
-        before: latestMessageId,
+      const fetchedMessages = await channel.messages.fetch({
+        after: latestMessageId,
         cache: false,
         limit: 100,
       });
 
-      if (messages.size === 0) {
+      if (fetchedMessages.size === 0) {
         break;
       }
 
-      messages = messages.filter(
-        message => !message.author.bot && !message.author.system
-      );
+      const messages = fetchedMessages
+        .map(x => x)
+        .filter(
+          message =>
+            !message.author.bot &&
+            !message.author.system &&
+            message.id !== latestMessageId
+        );
 
-      await interaction.editReply({
-        embeds: [
-          Messages.success().setDescription('Imported messages: ' + count),
-        ],
-      });
+      latestMessageId = fetchedMessages.reduce(
+        (prev: Message<true>, curr: Message<true>) => {
+          return prev?.id > curr.id ? prev : curr;
+        }
+      ).id;
+
+      if (messages.length === 0) {
+        continue;
+      }
 
       await DbMessages.bulkCreate(
         messages.map(message => ({
@@ -109,8 +127,13 @@ export default new Command({
         }))
       );
 
-      count += messages.size;
-      latestMessageId = messages.last()?.id;
+      await interaction.editReply({
+        embeds: [
+          Messages.success().setDescription('Imported messages: ' + count),
+        ],
+      });
+
+      count += messages.length;
     }
 
     await interaction.followUp({

@@ -21,10 +21,6 @@ export async function handleCommand(
   client: MarkovClient,
   interaction: CommandInteraction
 ) {
-  await interaction.deferReply({
-    fetchReply: true,
-  });
-
   const {commandName} = interaction;
   const command = client.commands.get(commandName);
 
@@ -33,6 +29,11 @@ export async function handleCommand(
       ephemeral: true,
       embeds: [messages.error().setDescription('Command not found.')],
     });
+
+  await interaction.deferReply({
+    fetchReply: true,
+    ephemeral: command.ephemeral,
+  });
 
   try {
     await command.run({

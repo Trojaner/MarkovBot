@@ -5,6 +5,8 @@ import {generateTextFromDiscordMessages} from '../markov/DiscordMarkovGenerator'
 import Messages from '../Messages';
 
 export default new Command({
+  ephemeral: true,
+
   builder: new SlashCommandBuilder()
     .addChannelOption(option =>
       option
@@ -49,6 +51,7 @@ export default new Command({
       channel,
       query,
       limit: 50000,
+      interaction,
     });
   },
 });

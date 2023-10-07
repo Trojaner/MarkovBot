@@ -9,6 +9,8 @@ export type CommandArgs = {
 };
 
 export class Command {
+  ephemeral?: boolean;
+
   disabled?: boolean;
 
   builder!: SlashCommandBuilder;

@@ -76,13 +76,13 @@ export class MarkovChain {
 
     // eslint-disable-next-line no-constant-condition
     while (true) {
-      const lastNgram = sequence.slice(-1).join(' ');
+      const lastNgram = sequence.slice(-this.minOrder).join(' ');
       if (!lastNgram) {
         break;
       }
 
       const possibleKeys = Array.from(this.ngrams.keys()).filter(ngram =>
-        ngram.startsWith(lastNgram.toLowerCase())
+        ngram.endsWith(lastNgram.toLowerCase())
       );
 
       const possibleNextTokens = possibleKeys

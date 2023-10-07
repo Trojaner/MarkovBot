@@ -53,7 +53,7 @@ export async function generateTextFromDiscordMessages({
     .map(x => x.getDataValue<string>('content'))
     .filter(x => !x.includes('https://'))
     .filter(x => !x.includes('http://'))
-    .filter(x => !x.includes('```'))
+    .filter(x => !x.includes('`'))
     .map(x => normalize(x || ''))
     .filter(x => x !== '' && x.split(' ').length > 2)
     .filter(
@@ -85,11 +85,11 @@ export async function generateTextFromDiscordMessages({
   }
 
   const markovChain = new MarkovChain({
-    minOrder: 1,
+    minOrder: 2,
     maxOrder: 3,
     stopwords: sw.tur,
     tokenizer: new natural.WordTokenizer({
-      pattern: /([\p{Script=Latin}'.?!:;,<>@]+|[0-9._]+|.|!|\?|'|"|:|;|,|-)/iu,
+      pattern: /([\p{Script=Latin}'.?!:;,<>@]+|[0-9._]+|.|!|\?|:|;|,|-|<|@)/iu,
     }),
   });
 
@@ -106,19 +106,38 @@ export async function generateTextFromDiscordMessages({
   }
 
   const maxTotalLength = 2000;
+  const minTextLength = 25;
 
   const untilFilter = (s: string[]) => {
     const text = s ? normalize(s?.join(' ')) : null;
-    return (text &&
-      (text.endsWith('\0') || text.length >= maxTotalLength) &&
-      text !== key.join(' ') &&
-      text !== input) as boolean;
+    if (!text || text.length < minTextLength) {
+      return false;
+    }
+
+    if (text === key.join(' ')) {
+      return false;
+    }
+
+    if (text === input) {
+      return false;
+    }
+
+    if (text.length >= maxTotalLength) {
+      return true;
+    }
+
+    return (
+      text.endsWith('\0') ||
+      text.endsWith('.') ||
+      text.endsWith('?') ||
+      text.endsWith('!')
+    );
   };
 
   const result = markovChain
     .randomSequence(key.join(' '), untilFilter)
+    .map(x => (x || '').replace(/\0/g, ''))
     .join(' ')
-    .replace(/\0/g, '')
     .trim();
 
   if (result === '' || normalize(result) === input) {

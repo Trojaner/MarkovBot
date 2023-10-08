@@ -1,7 +1,5 @@
 import {
   CommandInteraction,
-  GuildMember,
-  Snowflake,
   TextChannel,
   Webhook,
   WebhookClient,
@@ -16,11 +14,9 @@ import * as natural from 'natural';
 interface IGenerateTextOptions {
   client: MarkovClient;
   query?: string;
-  userId?: Snowflake;
-  guildId?: Snowflake;
-  channel: TextChannel;
   limit?: number;
   interaction: CommandInteraction;
+  userId?: string;
 }
 
 const normalize = (str: string) => {
@@ -33,16 +29,29 @@ const normalize = (str: string) => {
 export async function generateTextFromDiscordMessages({
   client,
   query,
-  userId,
-  guildId,
-  channel,
   limit,
   interaction,
+  userId,
 }: IGenerateTextOptions) {
+  const reply = await interaction.fetchReply();
+  await interaction.guild!.fetch();
+
+  const channel = (await interaction.guild!.channels.fetch(
+    reply.channelId
+  )) as TextChannel;
+
+  if (!channel) {
+    await interaction.followUp({
+      content: 'Cannot impersonate from here.',
+      ephemeral: true,
+    });
+    return;
+  }
+
   const entries = await DbMessages.findAll({
     where: {
       user_id: userId || {[Op.ne]: null},
-      guild_id: guildId || channel.guild.id,
+      guild_id: interaction.guild!.id,
       content: {[Op.ne]: ''},
     },
   });
@@ -74,16 +83,6 @@ export async function generateTextFromDiscordMessages({
     messages = messages.slice(0, limit);
   }
 
-  let input: string | null = null;
-  if (query && query.length > 0) {
-    input = normalize(query) || null;
-  } else {
-    const randomMessage = messages[Math.floor(Math.random() * messages.length)];
-    const messageWords = randomMessage.split(' ');
-    const randomWord = messageWords[0];
-    input = normalize(randomWord);
-  }
-
   const markovChain = new MarkovChain({
     minOrder: 2,
     maxOrder: 3,
@@ -98,11 +97,15 @@ export async function generateTextFromDiscordMessages({
   }
 
   let key: string[];
+  let input: string | null = null;
+  if (query && query.length > 0) {
+    input = normalize(query) || null;
+  }
 
   if (input) {
     key = input.split(' ');
   } else {
-    key = [markovChain.randomStartToken()];
+    key = [normalize(markovChain.randomStartToken())];
   }
 
   const maxTotalLength = 2000;
@@ -115,10 +118,6 @@ export async function generateTextFromDiscordMessages({
     }
 
     if (text === key.join(' ')) {
-      return false;
-    }
-
-    if (text === input) {
       return false;
     }
 
@@ -140,7 +139,7 @@ export async function generateTextFromDiscordMessages({
     .join(' ')
     .trim();
 
-  if (result === '' || normalize(result) === input) {
+  if (result === '' || normalize(result) === key.join(' ')) {
     await interaction.followUp({
       content: 'Failed to generate message. Try a different query.',
       ephemeral: true,
@@ -162,27 +161,71 @@ export async function generateTextFromDiscordMessages({
 
   const webhookClient = new WebhookClient({url: webhook!.url});
 
-  let member: GuildMember;
-  if (userId) {
-    member = await channel.guild.members.fetch(userId);
-  } else {
-    member = await channel.guild.members.fetch(client.user!.id);
-  }
+  const member = userId
+    ? await channel.guild.members.fetch({
+        user: userId,
+        cache: false,
+      })
+    : null;
 
-  try {
-    await webhookClient.send({
-      content: result,
-      avatarURL: member.displayAvatarURL() || member.avatarURL() || undefined,
-      username: member.displayName || member.nickname || member.user.username,
-    });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (e: any) {
-    if (e.toString().includes('USERNAME_INVALID')) {
+  const memberName =
+    member?.displayName ||
+    member?.nickname ||
+    member?.user.username ||
+    undefined;
+
+  console.log(
+    interaction.user.username +
+      ' impersonates ' +
+      (memberName || '<hive>') +
+      ' in ' +
+      channel.name +
+      ' with query ' +
+      (query || '<none>')
+  );
+
+  await interaction.deleteReply();
+
+  if (member) {
+    try {
       await webhookClient.send({
         content: result,
         avatarURL: member.displayAvatarURL() || member.avatarURL() || undefined,
-        username: member.user.username,
+        username: memberName,
       });
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (e: any) {
+      if (e.toString().includes('USERNAME_INVALID')) {
+        await webhookClient.send({
+          content: result,
+          avatarURL:
+            member.displayAvatarURL() || member.avatarURL() || undefined,
+          username: member.user.username,
+        });
+      }
     }
+  } else {
+    const bot = await channel.guild.members.fetch({
+      user: client.user!.id,
+      cache: false,
+    });
+
+    await webhookClient.send({
+      content: result,
+      avatarURL:
+        interaction.guild?.iconURL({
+          forceStatic: true,
+        }) ||
+        bot.displayAvatarURL() ||
+        bot.avatarURL() ||
+        undefined,
+      username:
+        interaction.guild?.name ||
+        bot.displayName ||
+        bot.nickname ||
+        bot.user.username ||
+        undefined,
+    });
   }
 }

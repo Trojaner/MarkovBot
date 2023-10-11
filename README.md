@@ -27,15 +27,14 @@ Create an .env file in the project's root directory with the following content (
 ```
 DISCORD_CLIENT_TOKEN="<your token>"
 CONNECTION_STRING="<connection string>" # e.g. "postgres://postgres@localhost:5432/markov", see sequelizer documentation for more options
+BOT_OWNER_ID="<your discord id>" # restricts /import command
 ```
 
 ### Import messages
 
-Import messages from your text channels. Run `/import \<channel\>` to import messages from a channel.  
+Run `/import \<channel\>` to import messages from a channel.  
 The more messages you have, the better the results are. Avoid importing gibberish from e.g. #bot-commands channels.  
 Regardless of that the bot will try to filter out unparsable messages like links or messages that seem like bot commands.
-
-**YOU SHOULD AVOID IMPORTING MESSAGES WHEN RUNNING THE BOT ON YOUR OWN COMPUTER. DISCORD WILL RATE-LIMIT YOUR IP ADDRESS FOR A FEW HOURS. YOU WILL NOT BE ABLE TO USE YOUR DISCORD UNTIL THE RATE LIMIT EXPIRES OR YOUR IP ADDRESS CHANGES.**
 
 ## Using the bot
 

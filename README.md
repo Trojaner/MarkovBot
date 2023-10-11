@@ -12,7 +12,7 @@ It also needs the following permissions:
 - Read Messages/View Channels
 - Send Messages
 - Read Message History
-- Webhooks for channels where it can auto-reply or impersonate users
+- Manage Webhooks for channels where it can auto-reply or impersonate users
 
 ## How to run
 
@@ -40,8 +40,11 @@ Regardless of that the bot will try to filter out unparsable messages like links
 
 ### Impersonate Users
 
-After importing you can impersonate any user using the `/impersonate <user> <channel> [prompt]` command.  
-The prompt parameter is optional and can include a few words that the generated message should start with.
+After importing you can impersonate any user using the `/impersonate <user> [query]` command.  
+The query parameter is optional and can a word that the generated message should start with.
+
+### Hive Mind
+You can also use `/hive [query]` where the bot impersonates the whole discord server as if it was a single person.
 
 ## Todo:
 

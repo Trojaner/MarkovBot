@@ -1,4 +1,4 @@
-# Discord Markov Bot
+# Discord Markov Impostor Bot
 
 ![image](https://github.com/Trojaner/MarkovBot/assets/1809172/82320a9e-0390-45b4-8826-f5f0b31b30a3)
 ![image](https://github.com/Trojaner/MarkovBot/assets/1809172/e050de91-a376-41f7-9f24-f34621131ffc)

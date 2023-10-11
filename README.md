@@ -41,7 +41,7 @@ Regardless of that the bot will try to filter out unparsable messages like links
 ### Impersonate Users
 
 After importing you can impersonate any user using the `/impersonate <user> [query]` command.  
-The query parameter is optional and can a word that the generated message should start with.
+The query parameter is optional and can be a word that the generated message should start with.
 
 ### Hive Mind
 You can also use `/hive [query]` where the bot impersonates the whole discord server as if it was a single person.

@@ -1,5 +1,9 @@
 # Discord Markov Bot
 
+![image](https://github.com/Trojaner/MarkovBot/assets/1809172/82320a9e-0390-45b4-8826-f5f0b31b30a3)
+![image](https://github.com/Trojaner/MarkovBot/assets/1809172/e050de91-a376-41f7-9f24-f34621131ffc)
+
+
 This bot can impersonate any Discord user's unique writing style. It can generate text based on prompts or it can be completely random.
 
 As this bot needs to save all channel messages when importing it cannot be a public bot for privacy reasons. You must self-host it to use it on your own servers.

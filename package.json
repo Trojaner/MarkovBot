@@ -22,7 +22,6 @@
     "lunr-languages": "^1.13.0",
     "natural": "^6.7.2",
     "node-nlp-typescript": "^1.0.3",
-    "node-snowball": "^0.6.0",
     "pg": "^8.8.0",
     "pg-hstore": "^2.3.4",
     "require-all": "^3.0.0",

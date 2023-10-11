@@ -1,5 +1,5 @@
 import * as natural from 'natural';
-import * as snb from 'node-snowball';
+import {Stemmer, Languages} from 'multilingual-stemmer';
 
 export class MarkovChain {
   private minOrder: number;
@@ -48,12 +48,14 @@ export class MarkovChain {
           continue;
         }
 
-        const stem = snb.stemword(ngram, 'turkish').toLowerCase();
-        if (!this.stemFrequency.has(stem)) {
-          this.stemFrequency.set(stem, 0);
-        }
+        for (const token of ngramKey.split(' ')) {
+          const stem = token.toLowerCase();
+          if (!this.stemFrequency.has(stem)) {
+            this.stemFrequency.set(stem, 0);
+          }
 
-        this.stemFrequency.set(stem, this.stemFrequency.get(stem)! + 1);
+          this.stemFrequency.set(stem, this.stemFrequency.get(stem)! + 1);
+        }
       }
     }
   }
@@ -107,11 +109,26 @@ export class MarkovChain {
     return sequence;
   }
 
-  public getMostFrequentStemmedTokens(n: number): Map<string, number> {
+  public getTokenFrequency(n: number): Map<string, number> {
     return new Map(
       Array.from(this.stemFrequency.entries())
+        .filter(x => !this.stopwords.includes(x[0]))
+        .filter(x => !x[0].includes('<@') && !x[0].includes('<#'))
+        // eslint-disable-next-line no-control-regex
+        .filter(x => /[a-zA-Z.?!:;,]+/gi.test(x[0]))
         .sort((a, b) => b[1] - a[1])
         .slice(0, n)
     );
+  }
+
+  public getNgrams(token: string, n: number) {
+    return [...this.ngrams.keys()]
+      .map(x => x.split(' '))
+      .filter(x => x[0]?.toLowerCase() === token.toLowerCase() && x.length > 1)
+      .filter(x => !this.stopwords.includes(x[1]))
+      .map(x => ({
+        ngram: x,
+      }))
+      .slice(0, n);
   }
 }

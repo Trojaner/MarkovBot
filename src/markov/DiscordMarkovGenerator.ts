@@ -1,5 +1,8 @@
 import {
+  APIEmbed,
+  APIEmbedField,
   CommandInteraction,
+  JSONEncodable,
   TextChannel,
   Webhook,
   WebhookClient,
@@ -10,14 +13,9 @@ import MarkovClient from '../MarkovClient';
 import {MarkovChain} from './MarkovChain';
 import * as sw from 'stopword';
 import * as natural from 'natural';
+import {EmbedBuilder} from '@discordjs/builders';
 
-interface IGenerateTextOptions {
-  client: MarkovClient;
-  query?: string;
-  limit?: number;
-  interaction: CommandInteraction;
-  userId?: string;
-}
+const commandPrefixes = ['!', '?', '-', '+', '#', '$', '%', '&'];
 
 const normalize = (str: string) => {
   return str
@@ -26,15 +24,18 @@ const normalize = (str: string) => {
     .trim();
 };
 
-export async function generateTextFromDiscordMessages({
-  client,
-  query,
-  limit,
+async function getMarkovChain({
   interaction,
   userId,
-}: IGenerateTextOptions) {
-  const reply = await interaction.fetchReply();
+  limit,
+}: {
+  interaction: CommandInteraction;
+  userId?: string;
+  limit?: number;
+}) {
   await interaction.guild!.fetch();
+
+  const reply = await interaction.fetchReply();
 
   const channel = (await interaction.guild!.channels.fetch(
     reply.channelId
@@ -42,10 +43,11 @@ export async function generateTextFromDiscordMessages({
 
   if (!channel) {
     await interaction.followUp({
-      content: 'Cannot impersonate from here.',
+      content: 'Cannot run command here.',
       ephemeral: true,
     });
-    return;
+
+    return false;
   }
 
   const entries = await DbMessages.findAll({
@@ -55,8 +57,6 @@ export async function generateTextFromDiscordMessages({
       content: {[Op.ne]: ''},
     },
   });
-
-  const commandPrefixes = ['!', '?', '-', '+', '#', '$', '%', '&'];
 
   let messages = entries
     .map(x => x.getDataValue<string>('content'))
@@ -69,14 +69,14 @@ export async function generateTextFromDiscordMessages({
       x => !commandPrefixes.some(prefix => x.startsWith(prefix) && x.length > 2)
     )
     .sort(() => Math.random() - 0.5)
-    .map(x => (!x.endsWith('.') ? x + '.' : x));
+    .map(x => (!x.endsWith('\0') ? x + '\0' : x));
 
   if (messages.length === 0) {
     await interaction.followUp({
       content: 'No messages found. Import messages first.',
       ephemeral: true,
     });
-    return;
+    return false;
   }
 
   if (limit && limit > 0) {
@@ -96,6 +96,145 @@ export async function generateTextFromDiscordMessages({
     markovChain.addToCorpus(msg);
   }
 
+  return {
+    markovChain,
+    channel,
+    messages,
+  };
+}
+
+export async function generateStats({
+  interaction,
+  userId,
+  query,
+}: {
+  interaction: CommandInteraction;
+  userId: string;
+  query?: string;
+}) {
+  const markovResult = await getMarkovChain({
+    interaction,
+    userId,
+  });
+
+  if (!markovResult) {
+    return;
+  }
+
+  const member = await markovResult.channel.guild.members.fetch({
+    user: userId,
+    cache: false,
+  });
+
+  let embeds: (JSONEncodable<APIEmbed> | APIEmbed)[] = [];
+
+  const memberName =
+    member.displayName || member.nickname || member.user.username;
+  const avatarUrl = member.displayAvatarURL() || member.avatarURL() || null;
+  const builder = new EmbedBuilder()
+    .setThumbnail(avatarUrl)
+    .setTitle(memberName);
+
+  const messageCount = markovResult.messages.length;
+
+  if (query) {
+    query = query.split(' ')[0];
+
+    const ngrams = markovResult.markovChain.getNgrams(query, 10);
+    const fields: APIEmbedField[] = [];
+
+    for (const pair of ngrams) {
+      const ngram = pair.ngram.join(' ');
+
+      if (!ngram) {
+        continue;
+      }
+
+      const frequency = markovResult.messages.filter(x =>
+        x.toLowerCase().includes(ngram.toLowerCase())
+      ).length;
+
+      fields.push({
+        name: ngram,
+        value: `${frequency} (${((frequency / messageCount) * 100).toFixed(
+          2
+        )}%)`,
+        inline: true,
+      });
+    }
+
+    builder.addFields(fields);
+    embeds = [builder];
+  } else {
+    const stats = markovResult.markovChain.getTokenFrequency(10);
+    const fields: APIEmbedField[] = [];
+
+    for (const pair of stats) {
+      const token = pair[0];
+      const frequency = pair[1];
+
+      fields.push({
+        name: token,
+        value: `${frequency} (${((frequency / messageCount) * 100).toFixed(
+          2
+        )}%)`,
+        inline: true,
+      });
+    }
+
+    fields.push({
+      name: 'Total messages',
+      value: messageCount.toFixed(0).toString(),
+    });
+
+    builder.addFields(fields);
+    embeds = [builder.data];
+  }
+
+  await interaction.editReply({
+    embeds,
+  });
+}
+
+async function getWebhookClient({channel}: {channel: TextChannel}) {
+  const webhooks = await channel.fetchWebhooks();
+  let webhook: Webhook | undefined = webhooks.find(
+    x => x.name === 'Markov Bot'
+  );
+
+  if (!webhook) {
+    webhook = await channel.createWebhook({
+      name: 'Markov Bot',
+      reason: 'Markov user impersonation',
+    });
+  }
+
+  return new WebhookClient({url: webhook!.url});
+}
+
+export async function generateTextFromDiscordMessages({
+  client,
+  query,
+  limit,
+  interaction,
+  userId,
+}: {
+  client: MarkovClient;
+  query?: string;
+  limit?: number;
+  interaction: CommandInteraction;
+  userId?: string;
+}) {
+  const markovResult = await getMarkovChain({
+    interaction,
+    userId,
+    limit,
+  });
+
+  if (!markovResult) {
+    return;
+  }
+
   let key: string[];
   let input: string | null = null;
   if (query && query.length > 0) {
@@ -105,7 +244,7 @@ export async function generateTextFromDiscordMessages({
   if (input) {
     key = input.split(' ');
   } else {
-    key = [normalize(markovChain.randomStartToken())];
+    key = [normalize(markovResult.markovChain.randomStartToken())];
   }
 
   const maxTotalLength = 2000;
@@ -133,7 +272,7 @@ export async function generateTextFromDiscordMessages({
     );
   };
 
-  const result = markovChain
+  const result = markovResult.markovChain
     .randomSequence(key.join(' '), untilFilter)
     .map(x => (x || '').replace(/\0/g, ''))
     .join(' ')
@@ -147,22 +286,10 @@ export async function generateTextFromDiscordMessages({
     return;
   }
 
-  const webhooks = await channel.fetchWebhooks();
-  let webhook: Webhook | undefined = webhooks.find(
-    x => x.name === 'Markov Bot'
-  );
-
-  if (!webhook) {
-    webhook = await channel.createWebhook({
-      name: 'Markov Bot',
-      reason: 'Markov user impersonation',
-    });
-  }
-
-  const webhookClient = new WebhookClient({url: webhook!.url});
+  const webhookClient = await getWebhookClient({channel: markovResult.channel});
 
   const member = userId
-    ? await channel.guild.members.fetch({
+    ? await markovResult.channel.guild.members.fetch({
         user: userId,
         cache: false,
       })
@@ -179,7 +306,7 @@ export async function generateTextFromDiscordMessages({
       ' impersonates ' +
       (memberName || '<hive>') +
       ' in ' +
-      channel.name +
+      markovResult.channel.name +
       ' with query ' +
       (query || '<none>')
   );
@@ -206,7 +333,7 @@ export async function generateTextFromDiscordMessages({
       }
     }
   } else {
-    const bot = await channel.guild.members.fetch({
+    const bot = await markovResult.channel.guild.members.fetch({
       user: client.user!.id,
       cache: false,
     });

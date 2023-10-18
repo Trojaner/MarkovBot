@@ -1,5 +1,4 @@
 import * as natural from 'natural';
-import {Stemmer, Languages} from 'multilingual-stemmer';
 
 export class MarkovChain {
   private minOrder: number;
@@ -44,7 +43,7 @@ export class MarkovChain {
 
         this.ngrams.get(ngramKey)!.push(nextToken);
 
-        if (this.stopwords.includes(ngramKey)) {
+        if (this.stopwords.includes(ngramKey.toLowerCase())) {
           continue;
         }
 
@@ -62,7 +61,7 @@ export class MarkovChain {
 
   public randomStartToken(): string {
     const possibleStartTokens = Array.from(this.ngrams.keys()).filter(
-      ngram => !this.stopwords.includes(ngram)
+      ngram => !this.stopwords.includes(ngram.toLowerCase())
     );
 
     return possibleStartTokens[
@@ -109,26 +108,35 @@ export class MarkovChain {
     return sequence;
   }
 
-  public getTokenFrequency(n: number): Map<string, number> {
-    return new Map(
-      Array.from(this.stemFrequency.entries())
-        .filter(x => !this.stopwords.includes(x[0]))
-        .filter(x => !x[0].includes('<@') && !x[0].includes('<#'))
-        // eslint-disable-next-line no-control-regex
-        .filter(x => /[a-zA-Z.?!:;,]+/gi.test(x[0]))
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, n)
-    );
-  }
+  public getTopNgramFrequency(
+    n: number,
+    includeToken?: string
+  ): Map<string, number> {
+    const sortedNGrams = Array.from(this.ngrams.keys()).sort((a, b) => {
+      return this.ngrams.get(b)!.length - this.ngrams.get(a)!.length;
+    });
 
-  public getNgrams(token: string, n: number) {
-    return [...this.ngrams.keys()]
-      .map(x => x.split(' '))
-      .filter(x => x[0]?.toLowerCase() === token.toLowerCase() && x.length > 1)
-      .filter(x => !this.stopwords.includes(x[1]))
-      .map(x => ({
-        ngram: x,
-      }))
-      .slice(0, n);
+    const topNGramFrequency: Map<string, number> = new Map();
+
+    for (let i = 0; i < sortedNGrams.length; i++) {
+      const ngramKey = sortedNGrams[i];
+
+      if (
+        includeToken &&
+        !ngramKey.toLowerCase().includes(includeToken.toLowerCase())
+      ) {
+        continue;
+      }
+
+      if (!this.stopwords.includes(ngramKey.toLowerCase())) {
+        topNGramFrequency.set(ngramKey, this.ngrams.get(ngramKey)!.length);
+      }
+
+      if (topNGramFrequency.size >= n) {
+        break;
+      }
+    }
+
+    return topNGramFrequency;
   }
 }

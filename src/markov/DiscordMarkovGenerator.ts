@@ -19,8 +19,8 @@ const commandPrefixes = ['!', '?', '-', '+', '#', '$', '%', '&'];
 
 const normalize = (str: string) => {
   return str
+    .replace(/['"]/g, '')
     .replace(/\s{2,}/g, ' ')
-    .replace(/('")/g, '')
     .trim();
 };
 
@@ -86,9 +86,9 @@ async function getMarkovChain({
   const markovChain = new MarkovChain({
     minOrder: 2,
     maxOrder: 3,
-    stopwords: sw.tur,
+    stopwords: sw.tur.concat(sw.eng),
     tokenizer: new natural.WordTokenizer({
-      pattern: /([\p{Script=Latin}'.?!:;,<>@]+|[0-9._]+|.|!|\?|:|;|,|-|<|@)/iu,
+      pattern: /([\p{Script=Latin}'.?!:;,<>@0-9_+-|]+)/iu,
     }),
   });
 
@@ -140,19 +140,16 @@ export async function generateStats({
   if (query) {
     query = query.split(' ')[0];
 
-    const ngrams = markovResult.markovChain.getNgrams(query, 10);
+    const ngrams = markovResult.markovChain.getTopNgramFrequency(10, query);
     const fields: APIEmbedField[] = [];
 
     for (const pair of ngrams) {
-      const ngram = pair.ngram.join(' ');
+      const ngram = pair[0];
+      const frequency = pair[1];
 
       if (!ngram) {
         continue;
       }
-
-      const frequency = markovResult.messages.filter(x =>
-        x.toLowerCase().includes(ngram.toLowerCase())
-      ).length;
 
       fields.push({
         name: ngram,
@@ -166,7 +163,7 @@ export async function generateStats({
     builder.addFields(fields);
     embeds = [builder];
   } else {
-    const stats = markovResult.markovChain.getTokenFrequency(10);
+    const stats = markovResult.markovChain.getTopNgramFrequency(10);
     const fields: APIEmbedField[] = [];
 
     for (const pair of stats) {
@@ -183,7 +180,7 @@ export async function generateStats({
     }
 
     fields.push({
-      name: 'Total messages',
+      name: 'Total parsable messages',
       value: messageCount.toFixed(0).toString(),
     });
 
@@ -193,6 +190,9 @@ export async function generateStats({
 
   await interaction.editReply({
     embeds,
+    allowedMentions: {
+      users: [],
+    },
   });
 }
 
@@ -319,6 +319,9 @@ export async function generateTextFromDiscordMessages({
         content: result,
         avatarURL: member.displayAvatarURL() || member.avatarURL() || undefined,
         username: memberName,
+        allowedMentions: {
+          users: [],
+        },
       });
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -329,6 +332,9 @@ export async function generateTextFromDiscordMessages({
           avatarURL:
             member.displayAvatarURL() || member.avatarURL() || undefined,
           username: member.user.username,
+          allowedMentions: {
+            users: [],
+          },
         });
       }
     }
@@ -347,12 +353,12 @@ export async function generateTextFromDiscordMessages({
         bot.displayAvatarURL() ||
         bot.avatarURL() ||
         undefined,
-      username:
-        interaction.guild?.name ||
-        bot.displayName ||
-        bot.nickname ||
-        bot.user.username ||
-        undefined,
+      username: interaction.guild?.name
+        ? interaction.guild?.name + ' Hive Mind'
+        : bot.displayName || bot.nickname || bot.user.username || undefined,
+      allowedMentions: {
+        users: [],
+      },
     });
   }
 }

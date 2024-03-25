@@ -94,7 +94,7 @@ async function getMarkovChain({
       stopwords = stopwords.concat(sw[lang]);
     }
   }
-  let pattern = /[[\p{L}\p{M}]*+|'|"|\.|\?|!|:|;|`|,|<|>|@|#|_|\+|\-|\*]+/iu;
+  let pattern = /[\p{L}|\p{M}|'|"|\.|\?|!|:|;|`|,|<|>|@|#|_|\+|\-|\*]+/iu;
   if (process.env['TOKENIZER_PATTERN']) {
     pattern = new RegExp(process.env['TOKENIZER_PATTERN'], 'iu');
   }

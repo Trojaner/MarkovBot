@@ -84,12 +84,28 @@ async function getMarkovChain({
     messages = messages.slice(0, limit);
   }
 
+  let stopwords = sw.eng;
+  if (process.env['TOKENIZER_LANGUAGE']) {
+    stopwords = [];
+    let languages = process.env['TOKENIZER_LANGUAGE'].split(',');
+
+    for (let lang of languages) {
+      // @ts-ignore
+      stopwords = stopwords.concat(sw[lang]);
+    }
+  }
+
+  let pattern = /([\p{L}'.?!:;,<>@0-9_+-|]+)/iu;
+  if (process.env['TOKENIZER_PATTERN']) {
+    pattern = new RegExp(process.env['TOKENIZER_PATTERN'], 'iu');
+  }
+
   const markovChain = new MarkovChain({
     minOrder: 2,
     maxOrder: 3,
-    stopwords: sw.tur.concat(sw.eng),
+    stopwords,
     tokenizer: new natural.WordTokenizer({
-      pattern: /([\p{Script=Latin}'.?!:;,<>@0-9_+-|]+)/iu,
+      pattern,
     }),
   });
 

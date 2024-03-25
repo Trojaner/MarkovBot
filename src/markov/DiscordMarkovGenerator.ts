@@ -85,7 +85,7 @@ async function getMarkovChain({
   }
 
   let stopwords = sw.eng;
-  if (process.env['TOKENIZER_LANGUAGE']) {
+  if (process.env['TOKENIZER_LANGUAGE'] && process.env['TOKENIZER_LANGUAGE'].trim() != '') {
     stopwords = [];
     let languages = process.env['TOKENIZER_LANGUAGE'].split(',');
 
@@ -94,9 +94,12 @@ async function getMarkovChain({
       stopwords = stopwords.concat(sw[lang]);
     }
   }
-  let pattern = /[\p{L}|\p{M}|'|"|\.|\?|!|:|;|`|,|<|>|@|#|_|\+|\-|\*]+/iu;
-  if (process.env['TOKENIZER_PATTERN']) {
-    pattern = new RegExp(process.env['TOKENIZER_PATTERN'], 'iu');
+  let pattern = /(?![\p{Z}\p{C}])[\p{L}\p{M}\p{S}\p{N}\p{P}]+/mv;
+  if (
+    process.env['TOKENIZER_PATTERN'] &&
+    process.env['TOKENIZER_PATTERN'].trim() != ''
+  ) {
+    pattern = new RegExp(process.env['TOKENIZER_PATTERN'], 'mv');
   }
 
   const markovChain = new MarkovChain({

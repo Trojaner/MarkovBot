@@ -6,7 +6,7 @@ export class MarkovChain {
   private ngrams: Map<string, string[]>;
   private stemFrequency: Map<string, number>;
   private stopwords: string[];
-  private tokenizer: natural.WordTokenizer;
+  private tokenizer: natural.RegexpTokenizer;
 
   constructor({
     minOrder,
@@ -17,7 +17,7 @@ export class MarkovChain {
     minOrder: number;
     maxOrder: number;
     stopwords: string[];
-    tokenizer: natural.WordTokenizer;
+    tokenizer: natural.RegexpTokenizer;
   }) {
     this.minOrder = minOrder;
     this.maxOrder = maxOrder;

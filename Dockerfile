@@ -1,4 +1,4 @@
-FROM node:lts-alpine as base
+FROM node:lts as base
 ENV NODE_ENV=development
 
 WORKDIR /app

@@ -1,4 +1,4 @@
-import {EmbedBuilder} from 'discord.js';
+import { EmbedBuilder } from 'discord.js';
 
 const success = () =>
   new EmbedBuilder().setColor('Green').setTitle('Successful');

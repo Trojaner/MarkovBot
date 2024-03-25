@@ -1,29 +1,29 @@
-import {SlashCommandBuilder} from '@discordjs/builders';
-import {ChannelType, Message, Snowflake} from 'discord.js';
-import {Op} from 'sequelize';
-import {Command} from '../Command';
-import {DbMessages} from '../Database';
+import { SlashCommandBuilder } from '@discordjs/builders';
+import { ChannelType, Message, Snowflake } from 'discord.js';
+import { Op } from 'sequelize';
+import { Command } from '../Command';
+import { DbMessages } from '../Database';
 import Messages from '../Messages';
 
 export default new Command({
   builder: new SlashCommandBuilder()
-    .addChannelOption(option =>
+    .addChannelOption((option) =>
       option
         .setName('channel')
         .setDescription('Channel to import from.')
-        .setRequired(true)
+        .setRequired(true),
     )
-    .addUserOption(option =>
+    .addUserOption((option) =>
       option
         .setName('user')
         .setDescription('User to import from.')
-        .setRequired(false)
+        .setRequired(false),
     )
 
     .setName('import')
     .setDescription('Import messages to database.'),
 
-  run: async ({interaction, client}) => {
+  run: async ({ interaction, client }) => {
     const channelId = interaction.options.get('channel')!.value as string;
     const channel = await client.channels.fetch(channelId);
 
@@ -59,7 +59,7 @@ export default new Command({
     const latestMessage = await DbMessages.findOne({
       where: {
         channel_id: channelId,
-        user_id: userId || {[Op.ne]: null},
+        user_id: userId || { [Op.ne]: null },
       },
       order: [['time', 'DESC']],
     });
@@ -68,18 +68,17 @@ export default new Command({
     let count = await DbMessages.count({
       where: {
         channel_id: channelId,
-        user_id: userId || {[Op.ne]: null},
+        user_id: userId || { [Op.ne]: null },
       },
     });
 
     if (latestMessage) {
-      //latestMessageId = latestMessage.getDataValue<Snowflake>('message_id');
-      latestMessageId = '1050544388050268210';
+      latestMessageId = latestMessage.getDataValue<Snowflake>('message_id');
 
       await interaction.followUp({
         embeds: [
           Messages.success().setDescription(
-            `Continuing to import after message #${latestMessageId}`
+            `Continuing to import after message #${latestMessageId}`,
           ),
         ],
       });
@@ -98,18 +97,18 @@ export default new Command({
       }
 
       const messages = fetchedMessages
-        .map(x => x)
+        .map((x) => x)
         .filter(
-          message =>
+          (message) =>
             !message.author.bot &&
             !message.author.system &&
-            message.id !== latestMessageId
+            message.id !== latestMessageId,
         );
 
       latestMessageId = fetchedMessages.reduce(
         (prev: Message<true>, curr: Message<true>) => {
           return prev?.id > curr.id ? prev : curr;
-        }
+        },
       ).id;
 
       if (messages.length === 0) {
@@ -117,14 +116,14 @@ export default new Command({
       }
 
       await DbMessages.bulkCreate(
-        messages.map(message => ({
+        messages.map((message) => ({
           guild_id: message.guild.id,
           message_id: message.id,
           user_id: message.author.id,
           channel_id: message.channel.id,
           content: message.content,
           time: message.createdAt,
-        }))
+        })),
       );
 
       await interaction.editReply({

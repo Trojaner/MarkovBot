@@ -10,7 +10,6 @@ lerna-debug.log*
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
-build/
 dist/
 
 # Runtime data
@@ -39,7 +38,7 @@ bower_components
 .lock-wscript
 
 # Compiled binary addons (https://nodejs.org/api/addons.html)
-build/Release
+dist/Release
 
 # Dependency directories
 node_modules/

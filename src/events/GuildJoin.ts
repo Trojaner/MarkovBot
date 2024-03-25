@@ -1,5 +1,5 @@
-import {Guild} from 'discord.js';
-import {Event} from '../Event';
+import { Guild } from 'discord.js';
+import { Event } from '../Event';
 
 export default new Event({
   name: 'guildCreate',

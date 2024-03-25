@@ -1,2 +1,12 @@
-build/
-build/node_modules/
+dist/
+node_modules/
+.git/
+.vscode/
+.env
+.pnp/
+.pnp.js
+.yarn/install-state.gz
+.yarn/
+*.tsbuildinfo
+.DS_Store
+**/*.log*

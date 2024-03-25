@@ -7,13 +7,13 @@ import {
   Webhook,
   WebhookClient,
 } from 'discord.js';
-import {Op} from 'sequelize';
-import {DbMessages} from '../Database';
+import { Op } from 'sequelize';
+import { DbMessages } from '../Database';
 import MarkovClient from '../MarkovClient';
-import {MarkovChain} from './MarkovChain';
+import { MarkovChain } from './MarkovChain';
 import * as sw from 'stopword';
 import * as natural from 'natural';
-import {EmbedBuilder} from '@discordjs/builders';
+import { EmbedBuilder } from '@discordjs/builders';
 
 const commandPrefixes = ['!', '?', '-', '+', '#', '$', '%', '&'];
 
@@ -38,7 +38,7 @@ async function getMarkovChain({
   const reply = await interaction.fetchReply();
 
   const channel = (await interaction.guild!.channels.fetch(
-    reply.channelId
+    reply.channelId,
   )) as TextChannel;
 
   if (!channel) {
@@ -52,24 +52,25 @@ async function getMarkovChain({
 
   const entries = await DbMessages.findAll({
     where: {
-      user_id: userId || {[Op.ne]: null},
+      user_id: userId || { [Op.ne]: null },
       guild_id: interaction.guild!.id,
-      content: {[Op.ne]: ''},
+      content: { [Op.ne]: '' },
     },
   });
 
   let messages = entries
-    .map(x => x.getDataValue<string>('content'))
-    .filter(x => !x.includes('https://'))
-    .filter(x => !x.includes('http://'))
-    .filter(x => !x.includes('`'))
-    .map(x => normalize(x || ''))
-    .filter(x => x !== '' && x.split(' ').length > 2)
+    .map((x) => x.getDataValue<string>('content'))
+    .filter((x) => !x.includes('https://'))
+    .filter((x) => !x.includes('http://'))
+    .filter((x) => !x.includes('`'))
+    .map((x) => normalize(x || ''))
+    .filter((x) => x !== '' && x.split(' ').length > 2)
     .filter(
-      x => !commandPrefixes.some(prefix => x.startsWith(prefix) && x.length > 2)
+      (x) =>
+        !commandPrefixes.some((prefix) => x.startsWith(prefix) && x.length > 2),
     )
     .sort(() => Math.random() - 0.5)
-    .map(x => (!x.endsWith('\0') ? x + '\0' : x));
+    .map((x) => (!x.endsWith('\0') ? x + '\0' : x));
 
   if (messages.length === 0) {
     await interaction.followUp({
@@ -154,7 +155,7 @@ export async function generateStats({
       fields.push({
         name: ngram,
         value: `${frequency} (${((frequency / messageCount) * 100).toFixed(
-          2
+          2,
         )}%)`,
         inline: true,
       });
@@ -173,7 +174,7 @@ export async function generateStats({
       fields.push({
         name: token,
         value: `${frequency} (${((frequency / messageCount) * 100).toFixed(
-          2
+          2,
         )}%)`,
         inline: true,
       });
@@ -196,10 +197,10 @@ export async function generateStats({
   });
 }
 
-async function getWebhookClient({channel}: {channel: TextChannel}) {
+async function getWebhookClient({ channel }: { channel: TextChannel }) {
   const webhooks = await channel.fetchWebhooks();
   let webhook: Webhook | undefined = webhooks.find(
-    x => x.name === 'Markov Bot'
+    (x) => x.name === 'Markov Bot',
   );
 
   if (!webhook) {
@@ -209,7 +210,7 @@ async function getWebhookClient({channel}: {channel: TextChannel}) {
     });
   }
 
-  return new WebhookClient({url: webhook!.url});
+  return new WebhookClient({ url: webhook!.url });
 }
 
 export async function generateTextFromDiscordMessages({
@@ -274,7 +275,7 @@ export async function generateTextFromDiscordMessages({
 
   const result = markovResult.markovChain
     .randomSequence(key.join(' '), untilFilter)
-    .map(x => (x || '').replace(/\0/g, ''))
+    .map((x) => (x || '').replace(/\0/g, ''))
     .join(' ')
     .trim();
 
@@ -286,7 +287,9 @@ export async function generateTextFromDiscordMessages({
     return;
   }
 
-  const webhookClient = await getWebhookClient({channel: markovResult.channel});
+  const webhookClient = await getWebhookClient({
+    channel: markovResult.channel,
+  });
 
   const member = userId
     ? await markovResult.channel.guild.members.fetch({
@@ -308,7 +311,7 @@ export async function generateTextFromDiscordMessages({
       ' in ' +
       markovResult.channel.name +
       ' with query ' +
-      (query || '<none>')
+      (query || '<none>'),
   );
 
   await interaction.deleteReply();

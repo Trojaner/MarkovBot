@@ -43,10 +43,6 @@ export class MarkovChain {
 
         this.ngrams.get(ngramKey)!.push(nextToken);
 
-        if (this.stopwords.includes(ngramKey.toLowerCase())) {
-          continue;
-        }
-
         for (const token of ngramKey.split(' ')) {
           const stem = token.toLowerCase();
           if (!this.stemFrequency.has(stem)) {
@@ -60,9 +56,7 @@ export class MarkovChain {
   }
 
   public randomStartToken(): string {
-    const possibleStartTokens = Array.from(this.ngrams.keys()).filter(
-      ngram => !this.stopwords.includes(ngram.toLowerCase())
-    );
+    const possibleStartTokens = Array.from(this.ngrams.keys());
 
     return possibleStartTokens[
       Math.floor(Math.random() * possibleStartTokens.length)
@@ -71,7 +65,7 @@ export class MarkovChain {
 
   public randomSequence(
     start: string,
-    until: (s: string[]) => boolean
+    until: (s: string[]) => boolean,
   ): string[] {
     const sequence: string[] = [start];
 
@@ -82,12 +76,12 @@ export class MarkovChain {
         break;
       }
 
-      const possibleKeys = Array.from(this.ngrams.keys()).filter(ngram =>
-        ngram.endsWith(lastNgram.toLowerCase())
+      const possibleKeys = Array.from(this.ngrams.keys()).filter((ngram) =>
+        ngram.endsWith(lastNgram.toLowerCase()),
       );
 
       const possibleNextTokens = possibleKeys
-        .map(key => this.ngrams.get(key)!)
+        .map((key) => this.ngrams.get(key)!)
         .flat();
 
       if (!possibleNextTokens || possibleNextTokens.length === 0) {
@@ -110,7 +104,7 @@ export class MarkovChain {
 
   public getTopNgramFrequency(
     n: number,
-    includeToken?: string
+    includeToken?: string,
   ): Map<string, number> {
     const sortedNGrams = Array.from(this.ngrams.keys()).sort((a, b) => {
       return this.ngrams.get(b)!.length - this.ngrams.get(a)!.length;

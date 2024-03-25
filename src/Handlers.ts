@@ -1,7 +1,7 @@
-import {CommandInteraction} from 'discord.js';
-import {setTimeout} from 'timers/promises';
+import { CommandInteraction } from 'discord.js';
+import { setTimeout } from 'timers/promises';
 
-import {Event} from './Event';
+import { Event } from './Event';
 import MarkovClient from './MarkovClient';
 import messages from './Messages';
 
@@ -19,9 +19,9 @@ export function handleEvent(client: MarkovClient, event: Event) {
 
 export async function handleCommand(
   client: MarkovClient,
-  interaction: CommandInteraction
+  interaction: CommandInteraction,
 ) {
-  const {commandName} = interaction;
+  const { commandName } = interaction;
   const command = client.commands.get(commandName);
 
   if (!command)

@@ -1,0 +1,12 @@
+version: '3.8'
+name: discord_markov_bot
+
+services:
+  bot:
+    image: discord_markov_bot:latest
+    container_name: discord_markov_bot
+    build: .
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: true

@@ -1,7 +1,7 @@
-import {Interaction} from 'discord.js';
+import { Interaction } from 'discord.js';
 
-import {Event} from '../Event';
-import {handleCommand} from '../Handlers';
+import { Event } from '../Event';
+import { handleCommand } from '../Handlers';
 
 export default new Event({
   name: 'interactionCreate',

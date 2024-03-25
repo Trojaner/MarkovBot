@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import {config} from 'dotenv';
+import { config } from 'dotenv';
 
 import MarkovClient from './MarkovClient';
 

@@ -1,5 +1,5 @@
-import {CommandInteraction} from 'discord.js';
-import {SlashCommandBuilder} from '@discordjs/builders';
+import { CommandInteraction } from 'discord.js';
+import { SlashCommandBuilder } from '@discordjs/builders';
 
 import MarkovClient from './MarkovClient';
 

@@ -8,7 +8,7 @@
             "cwd": "${workspaceRoot}",
             "program": "${workspaceRoot}/src/index.ts",
             "outFiles": [
-                "${workspaceRoot}/build/index.js"
+                "${workspaceRoot}/dist/index.js"
             ],
             "sourceMaps": true
         }

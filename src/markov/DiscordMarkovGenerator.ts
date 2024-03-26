@@ -8,7 +8,7 @@ import {
   WebhookClient,
 } from 'discord.js';
 import { Op } from 'sequelize';
-import { DbMessages } from '../Database';
+import { DbMessages, sequelize } from '../Database';
 import MarkovClient from '../MarkovClient';
 import { MarkovChain } from './MarkovChain';
 import * as sw from 'stopword';
@@ -56,20 +56,23 @@ async function getMarkovChain({
       guild_id: interaction.guild!.id,
       content: { [Op.ne]: '' },
     },
+    order: sequelize.random(),
   });
 
   let messages = entries
     .map((x) => x.getDataValue<string>('content'))
     .filter((x) => !x.includes('https://'))
     .filter((x) => !x.includes('http://'))
-    .filter((x) => !x.includes('`'))
+    .filter((x) => !x.includes('```'))
     .map((x) => normalize(x || ''))
-    .filter((x) => x !== '' && x.split(' ').length > 2)
+    .filter((x) => x.trim() !== '' && x.split(' ').length > 2)
     .filter(
       (x) =>
-        !commandPrefixes.some((prefix) => x.startsWith(prefix) && x.length > 2),
+        !commandPrefixes.some(
+          (prefix) =>
+            x.startsWith(prefix) && x.split(' ')[0].length > prefix.length,
+        ),
     )
-    .sort(() => Math.random() - 0.5)
     .map((x) => (!x.endsWith('\0') ? x + '\0' : x));
 
   if (messages.length === 0) {
@@ -97,7 +100,7 @@ async function getMarkovChain({
       stopwords = stopwords.concat(sw[lang]);
     }
   }
-  let pattern = /(?![\p{Z}\p{C}])[\p{L}\p{M}\p{S}\p{N}\p{P}]+/mvg;
+  let pattern = /(?![\p{Z}\p{C}])[\p{L}\p{M}\p{S}\p{N}\p{P}]+/gmv;
   if (
     process.env['TOKENIZER_PATTERN'] &&
     process.env['TOKENIZER_PATTERN'].trim() != ''
@@ -106,7 +109,7 @@ async function getMarkovChain({
   }
 
   const markovChain = new MarkovChain({
-    minOrder: 2,
+    minOrder: 1,
     maxOrder: 3,
     stopwords,
     tokenizer: new natural.RegexpTokenizer({
@@ -273,8 +276,9 @@ export async function generateTextFromDiscordMessages({
   const maxTotalLength = 2000;
   const minTextLength = 25;
 
+  let text = null;
   const untilFilter = (s: string[]) => {
-    const text = s ? normalize(s?.join(' ')) : null;
+    text = s ? normalize(s?.map((x) => x || '').join(' ')) : null;
     if (!text || text.length < minTextLength) {
       return false;
     }
@@ -287,19 +291,13 @@ export async function generateTextFromDiscordMessages({
       return true;
     }
 
-    return (
-      text.endsWith('\0') ||
-      text.endsWith('.') ||
-      text.endsWith('?') ||
-      text.endsWith('!')
-    );
-  };
+    text = text.replace('.', '\0').replace('?', '\0').replace('!', '\0');
 
-  const result = markovResult.markovChain
-    .randomSequence(key.join(' '), untilFilter)
-    .map((x) => (x || '').replace(/\0/g, ''))
-    .join(' ')
-    .trim();
+    return text.includes('\0');
+  };
+  markovResult.markovChain.randomSequence(key.join(' '), untilFilter);
+
+  const result = (text || '').split('\0')[0].trim();
 
   if (result === '' || normalize(result) === key.join(' ')) {
     await interaction.followUp({

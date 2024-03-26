@@ -3,7 +3,7 @@ import * as natural from 'natural';
 export class MarkovChain {
   private minOrder: number;
   private maxOrder: number;
-  private ngrams: Map<string, string[]>;
+  private ngrams: Map<string, Set<string>>;
   private stemFrequency: Map<string, number>;
   private stopwords: string[];
   private tokenizer: natural.RegexpTokenizer;
@@ -28,29 +28,39 @@ export class MarkovChain {
   }
 
   public addToCorpus(text: string): void {
-    const tokens = this.tokenizer.tokenize(text)!;
+    const tokens = this.tokenizer
+      .tokenize(text)!
+      .map((x) => x?.trim())
+      .filter((x) => x && x.length > 0);
 
-    for (let order = this.minOrder; order <= this.maxOrder; order++) {
-      for (let i = 0; i <= tokens.length - order; i++) {
-        const ngram = tokens.slice(i, i + order).join(' ');
-        const nextToken = tokens[i + order];
+    for (let i = 0; i < tokens.length; i++) {
+      const token = tokens[i];
+      const stem = token.toLowerCase();
+      if (!this.stemFrequency.has(stem)) {
+        this.stemFrequency.set(stem, 0);
+      }
 
-        const ngramKey = ngram.toLowerCase();
+      this.stemFrequency.set(stem, this.stemFrequency.get(stem)! + 1);
+
+      for (let j = i + 1; j < tokens.length - 1; j++) {
+        if (j - i < this.minOrder) {
+          continue;
+        }
+
+        if (j - i > this.maxOrder) {
+          break;
+        }
+
+        const ngram = tokens.slice(i, j);
+
+        let ngramKey = ngram.join(' ');
+        let ngramValue = tokens[j];
 
         if (!this.ngrams.has(ngramKey)) {
-          this.ngrams.set(ngramKey, []);
+          this.ngrams.set(ngramKey, new Set());
         }
 
-        this.ngrams.get(ngramKey)!.push(nextToken);
-
-        for (const token of ngramKey.split(' ')) {
-          const stem = token.toLowerCase();
-          if (!this.stemFrequency.has(stem)) {
-            this.stemFrequency.set(stem, 0);
-          }
-
-          this.stemFrequency.set(stem, this.stemFrequency.get(stem)! + 1);
-        }
+        this.ngrams.get(ngramKey)!.add(ngramValue);
       }
     }
   }
@@ -81,7 +91,7 @@ export class MarkovChain {
       );
 
       const possibleNextTokens = possibleKeys
-        .map((key) => this.ngrams.get(key)!)
+        .map((key) => [...this.ngrams.get(key)!])
         .flat();
 
       if (!possibleNextTokens || possibleNextTokens.length === 0) {
@@ -107,7 +117,7 @@ export class MarkovChain {
     includeToken?: string,
   ): Map<string, number> {
     const sortedNGrams = Array.from(this.ngrams.keys()).sort((a, b) => {
-      return this.ngrams.get(b)!.length - this.ngrams.get(a)!.length;
+      return this.ngrams.get(b)!.size - this.ngrams.get(a)!.size;
     });
 
     const topNGramFrequency: Map<string, number> = new Map();
@@ -123,7 +133,7 @@ export class MarkovChain {
       }
 
       if (!this.stopwords.includes(ngramKey.toLowerCase())) {
-        topNGramFrequency.set(ngramKey, this.ngrams.get(ngramKey)!.length);
+        topNGramFrequency.set(ngramKey, this.ngrams.get(ngramKey)!.size);
       }
 
       if (topNGramFrequency.size >= n) {

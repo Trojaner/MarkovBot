@@ -1,6 +1,6 @@
 import { Sequelize, DataTypes } from 'sequelize';
 
-const sequelize = new Sequelize(process.env.CONNECTION_STRING as string);
+export const sequelize = new Sequelize(process.env.CONNECTION_STRING as string);
 export const DbMessages = sequelize.define(
   'messages',
   {

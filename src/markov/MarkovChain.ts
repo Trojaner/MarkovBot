@@ -33,7 +33,7 @@ export class MarkovChain {
       .map((x) => x?.trim())
       .filter((x) => x && x.length > 0);
 
-    for (let i = 0; i < tokens.length; i++) {
+    for (let i = 0; i < tokens.length - this.minOrder; i++) {
       const token = tokens[i];
       const stem = token.toLowerCase();
       if (!this.stemFrequency.has(stem)) {
@@ -42,11 +42,15 @@ export class MarkovChain {
 
       this.stemFrequency.set(stem, this.stemFrequency.get(stem)! + 1);
 
-      for (let j = i + 1; j < tokens.length - 1; j++) {
+      for (let j = i + 1; j < tokens.length; j++) {
         if (j - i >= this.maxOrder) {
           break;
         }
-        
+
+        if (j - i < this.minOrder) {
+          continue;
+        }
+
         const ngram = tokens.slice(i, j);
 
         let ngramKey = ngram.join(' ').toLowerCase();
@@ -77,7 +81,11 @@ export class MarkovChain {
 
     // eslint-disable-next-line no-constant-condition
     while (true) {
-      const lastNgram = sequence.map(x => x.split(' ')).flat().slice(-this.minOrder).join(' ');
+      const lastNgram = sequence
+        .map((x) => x.split(' '))
+        .flat()
+        .slice(-this.minOrder)
+        .join(' ');
       if (!lastNgram) {
         break;
       }

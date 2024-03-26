@@ -15,9 +15,14 @@ import * as sw from 'stopword';
 import * as natural from 'natural';
 import { EmbedBuilder } from '@discordjs/builders';
 
+const separator = '\u0091';
 const commandPrefixes = ['!', '?', '-', '+', '#', '$', '%', '&'];
 
 const normalize = (str: string) => {
+  if(!str) {
+    return '';
+  }
+
   return str
     .replace(/['"]/g, '')
     .replace(/\s{2,}/g, ' ')
@@ -73,7 +78,7 @@ async function getMarkovChain({
             x.startsWith(prefix) && x.split(' ')[0].length > prefix.length,
         ),
     )
-    .map((x) => (!x.endsWith('\0') ? x + '\0' : x));
+    .map((x) => x + separator);
 
   if (messages.length === 0) {
     await interaction.followUp({
@@ -287,23 +292,27 @@ export async function generateTextFromDiscordMessages({
       return false;
     }
 
+    const index = Math.min(text.indexOf(separator), text.indexOf('?'), text.indexOf('!'), text.indexOf('.'));
+    if(index > 0) {
+      text = normalize(text.substring(0, index + 1).replace(separator, ''));
+      return true;
+    }
+
     if (text.length >= maxTotalLength) {
       return true;
     }
 
-    text = text.replace('.', '\0').replace('?', '\0').replace('!', '\0');
-
-    return text.includes('\0');
+    return false;
   };
+
   markovResult.markovChain.randomSequence(key.join(' '), untilFilter);
 
-  const result = (text || '').split('\0')[0].trim();
-
-  if (result === '' || normalize(result) === key.join(' ')) {
+  if (!text || text === '' || text === key.join(' ')) {
     await interaction.followUp({
       content: 'Failed to generate message. Try a different query.',
       ephemeral: true,
     });
+
     return;
   }
 
@@ -339,7 +348,7 @@ export async function generateTextFromDiscordMessages({
   if (member) {
     try {
       await webhookClient.send({
-        content: result,
+        content: text,
         avatarURL: member.displayAvatarURL() || member.avatarURL() || undefined,
         username: memberName,
         allowedMentions: {
@@ -351,7 +360,7 @@ export async function generateTextFromDiscordMessages({
     } catch (e: any) {
       if (e.toString().includes('USERNAME_INVALID')) {
         await webhookClient.send({
-          content: result,
+          content: text,
           avatarURL:
             member.displayAvatarURL() || member.avatarURL() || undefined,
           username: member.user.username,
@@ -368,7 +377,7 @@ export async function generateTextFromDiscordMessages({
     });
 
     await webhookClient.send({
-      content: result,
+      content: text,
       avatarURL:
         interaction.guild?.iconURL({
           forceStatic: true,

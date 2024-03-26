@@ -77,8 +77,18 @@ export default new Command({
 
       await interaction.followUp({
         embeds: [
-          Messages.success().setDescription(
+          Messages.info().setDescription(
             `Continuing to import after message #${latestMessageId}`,
+          ),
+        ],
+      });
+    } else {
+      latestMessageId = channel.id;
+
+      await interaction.followUp({
+        embeds: [
+          Messages.info().setDescription(
+            `Starting initial import.`,
           ),
         ],
       });
@@ -91,6 +101,8 @@ export default new Command({
         cache: false,
         limit: 100,
       });
+
+      count += fetchedMessages.size;
 
       if (fetchedMessages.size === 0) {
         break;
@@ -128,11 +140,9 @@ export default new Command({
 
       await interaction.editReply({
         embeds: [
-          Messages.success().setDescription('Imported messages: ' + count),
+          Messages.info('Importing...').setDescription('Imported messages: ' + count),
         ],
       });
-
-      count += messages.length;
     }
 
     await interaction.followUp({

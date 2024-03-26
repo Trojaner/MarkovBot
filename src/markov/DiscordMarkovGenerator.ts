@@ -24,7 +24,6 @@ const normalize = (str: string) => {
   }
 
   return str
-    .replace(/['"]/g, '')
     .replace(/\s{2,}/g, ' ')
     .trim();
 };
@@ -292,15 +291,18 @@ export async function generateTextFromDiscordMessages({
       return false;
     }
 
-    const index = Math.min(
+    let punctuationIndices = [
       text.indexOf(separator),
       text.indexOf('?'),
       text.indexOf('!'),
       text.indexOf('.'),
-    );
+    ]
 
-    if (index >= 0) {
-      text = text.substring(0, index)
+    punctuationIndices = punctuationIndices.filter((x) => x >= 0);
+
+    const punctuationIndex = Math.min(...punctuationIndices);
+    if (punctuationIndex >= 0) {
+      text = text.substring(0, punctuationIndex)
       return true;
     }
 
@@ -312,7 +314,7 @@ export async function generateTextFromDiscordMessages({
   };
 
   markovResult.markovChain.randomSequence(key.join(' '), untilFilter);
-  
+
   if (text) {
     text = normalize(text).replace(separator, '').substring(0, maxTotalLength);
   }

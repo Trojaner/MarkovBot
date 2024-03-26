@@ -114,7 +114,7 @@ async function getMarkovChain({
   }
 
   const markovChain = new MarkovChain({
-    minOrder: 1,
+    minOrder: 2,
     maxOrder: 3,
     stopwords,
     tokenizer: new natural.RegexpTokenizer({

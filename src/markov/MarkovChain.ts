@@ -47,10 +47,6 @@ export class MarkovChain {
           break;
         }
 
-        if (j - i < this.minOrder) {
-          continue;
-        }
-
         const ngram = tokens.slice(i, j);
 
         let ngramKey = ngram.join(' ').toLowerCase();

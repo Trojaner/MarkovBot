@@ -19,7 +19,7 @@ const separator = '\u0091';
 const commandPrefixes = ['!', '?', '-', '+', '#', '$', '%', '&'];
 
 const normalize = (str: string) => {
-  if(!str) {
+  if (!str) {
     return '';
   }
 
@@ -281,7 +281,7 @@ export async function generateTextFromDiscordMessages({
   const maxTotalLength = 2000;
   const minTextLength = 32;
 
-  let text = null;
+  let text: string | null = null;
   const untilFilter = (s: string[]) => {
     text = s ? normalize(s?.map((x) => x || '').join(' ')) : null;
     if (!text || text.length < minTextLength) {
@@ -292,9 +292,15 @@ export async function generateTextFromDiscordMessages({
       return false;
     }
 
-    const index = Math.min(text.indexOf(separator), text.indexOf('?'), text.indexOf('!'), text.indexOf('.'));
-    if(index > 0) {
-      text = normalize(text.substring(0, index + 1).replace(separator, ''));
+    const index = Math.min(
+      text.indexOf(separator),
+      text.indexOf('?'),
+      text.indexOf('!'),
+      text.indexOf('.'),
+    );
+
+    if (index >= 0) {
+      text = text.substring(0, index)
       return true;
     }
 
@@ -306,6 +312,10 @@ export async function generateTextFromDiscordMessages({
   };
 
   markovResult.markovChain.randomSequence(key.join(' '), untilFilter);
+  
+  if (text) {
+    text = normalize(text).replace(separator, '').substring(0, maxTotalLength);
+  }
 
   if (!text || text === '' || text === key.join(' ')) {
     await interaction.followUp({

@@ -43,7 +43,7 @@ export class MarkovChain {
       this.stemFrequency.set(stem, this.stemFrequency.get(stem)! + 1);
 
       for (let j = i + 1; j < tokens.length; j++) {
-        if (j - i > this.maxOrder) {
+        if (j - i >= this.maxOrder) {
           break;
         }
         

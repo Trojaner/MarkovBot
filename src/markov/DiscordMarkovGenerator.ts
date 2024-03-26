@@ -279,7 +279,7 @@ export async function generateTextFromDiscordMessages({
   }
 
   const maxTotalLength = 2000;
-  const minTextLength = 25;
+  const minTextLength = 32;
 
   let text = null;
   const untilFilter = (s: string[]) => {

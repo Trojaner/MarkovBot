@@ -23,9 +23,7 @@ const normalize = (str: string) => {
     return '';
   }
 
-  return str
-    .replace(/\s{2,}/g, ' ')
-    .trim();
+  return str.replace(/\s{2,}/g, ' ').trim();
 };
 
 async function getMarkovChain({
@@ -114,7 +112,7 @@ async function getMarkovChain({
 
   const markovChain = new MarkovChain({
     minOrder: 2,
-    maxOrder: 3,
+    maxOrder: 4,
     stopwords,
     tokenizer: new natural.RegexpTokenizer({
       pattern,
@@ -268,26 +266,29 @@ export async function generateTextFromDiscordMessages({
   let key: string[];
   let input: string | null = null;
   if (query && query.length > 0) {
-    input = normalize(query) || null;
+    input = query || null;
   }
 
   if (input) {
     key = input.split(' ');
   } else {
-    key = [normalize(markovResult.markovChain.randomStartToken())];
+    key = [markovResult.markovChain.randomStartToken()];
   }
+
+  const startToken = normalize(key.join(' '));
 
   const maxTotalLength = 2000;
   const minTextLength = 32;
 
   let text: string | null = null;
   const untilFilter = (s: string[]) => {
-    text = s ? normalize(s?.map((x) => x || '').join(' ')) : null;
+    text = s.join(' ');
+
     if (!text || text.length < minTextLength) {
       return false;
     }
 
-    if (text === key.join(' ')) {
+    if (normalize(text) === startToken) {
       return false;
     }
 
@@ -296,13 +297,13 @@ export async function generateTextFromDiscordMessages({
       text.indexOf('?'),
       text.indexOf('!'),
       text.indexOf('.'),
-    ]
+    ];
 
-    punctuationIndices = punctuationIndices.filter((x) => x >= 0);
+    punctuationIndices = punctuationIndices.filter((x) => x != -1);
 
-    const punctuationIndex = Math.min(...punctuationIndices);
-    if (punctuationIndex >= 0) {
-      text = text.substring(0, punctuationIndex)
+    if (punctuationIndices.length > 0) {
+      const punctuationIndex = Math.min(...punctuationIndices);
+      text = text.substring(0, punctuationIndex);
       return true;
     }
 
@@ -313,13 +314,13 @@ export async function generateTextFromDiscordMessages({
     return false;
   };
 
-  markovResult.markovChain.randomSequence(key.join(' '), untilFilter);
+  markovResult.markovChain.randomSequence(startToken, untilFilter);
 
   if (text) {
     text = normalize(text).replace(separator, '').substring(0, maxTotalLength);
   }
 
-  if (!text || text === '' || text === key.join(' ')) {
+  if (!text || text === '' || text === startToken) {
     await interaction.followUp({
       content: 'Failed to generate message. Try a different query.',
       ephemeral: true,

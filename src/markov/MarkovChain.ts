@@ -43,10 +43,6 @@ export class MarkovChain {
       this.stemFrequency.set(stem, this.stemFrequency.get(stem)! + 1);
 
       for (let j = i + 1; j < tokens.length; j++) {
-        if (j - i < this.minOrder) {
-          continue;
-        }
-
         if (j - i >= this.maxOrder) {
           break;
         }
@@ -81,13 +77,13 @@ export class MarkovChain {
 
     // eslint-disable-next-line no-constant-condition
     while (true) {
-      const lastNgram = sequence.slice(-this.minOrder).join(' ');
+      const lastNgram = sequence.map(x => x.split(' ')).flat().slice(-this.minOrder).join(' ');
       if (!lastNgram) {
         break;
       }
 
       const possibleKeys = Array.from(this.ngrams.keys()).filter((ngram) =>
-        ngram.endsWith(lastNgram.toLowerCase()),
+        ngram.toLowerCase().endsWith(lastNgram.toLowerCase()),
       );
 
       const possibleNextTokens = possibleKeys
